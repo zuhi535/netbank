@@ -32,17 +32,21 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Account> accounts = new ArrayList<>();
 
-    // Explicit getter/setter-ek a Lombok mellett (opcionális)
-    public Long getId() {
-        return id;
+    // Szükséges getter/setter-ek
+    public List<Account> getAccounts() {
+        return accounts;
     }
 
-    public String getName() {
-        return name;
+    public void setAccounts(List<Account> accounts) {
+        this.accounts = accounts;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getPassword() {
+        return password;
     }
 
     public String getEmail() {
@@ -53,15 +57,7 @@ public class User {
         this.email = email;
     }
 
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public Object getAccounts() {
-        return accounts;
+    public Object getName() {
+        return name;
     }
 }

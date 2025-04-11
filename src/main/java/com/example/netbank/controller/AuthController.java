@@ -10,7 +10,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -24,13 +23,11 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
-    // Régi funkcionalitás - kezdőlap
     @GetMapping("/")
     public String home() {
         return "index";
     }
 
-    // Régi funkcionalitás - regisztráció
     @GetMapping("/register")
     public String showRegisterForm(Model model) {
         model.addAttribute("user", new User());
@@ -42,43 +39,43 @@ public class AuthController {
         if (result.hasErrors()) {
             return "register";
         }
-        userService.register(user);
-        return "redirect:/login";
+        try {
+            userService.register(user);
+            return "redirect:/login";
+        } catch (Exception e) {
+            model.addAttribute("error", "Regisztráció sikertelen: " + e.getMessage());
+            return "register";
+        }
     }
 
-    // Régi funkcionalitás - bejelentkezés
     @GetMapping("/login")
-    public String showLoginForm() {
+    public String showLoginForm(@RequestParam(value = "error", required = false) String error, Model model) {
+        if (error != null) {
+            model.addAttribute("error", "Hibás email vagy jelszó");
+        }
         return "login";
     }
 
-    // Frissített dashboard funkcionalitás
     @GetMapping("/dashboard")
-    @Transactional(readOnly = true)
     public String dashboard(Model model) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated()) {
-            // Új megközelítés: CustomUserDetails használata
-            UserService.CustomUserDetails userDetails = (UserService.CustomUserDetails) auth.getPrincipal();
-            model.addAttribute("username", userDetails.getFullName());
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated() || auth.getName().equals("anonymousUser")) {
+                return "redirect:/login";
+            }
 
-            // Kétféleképpen töltjük be a felhasználót (kompatibilitás)
-            User user = userRepository.findById(userDetails.getUserId())
-                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-            Hibernate.initialize(user.getAccounts());
+            // A UserService.findByEmail() már dob UsernameNotFoundException-t ha nem találja a usert
+            User user = userService.findByEmail(auth.getName());
 
+            model.addAttribute("username", user.getName());
             model.addAttribute("user", user);
+            return "dashboard";
+        } catch (UsernameNotFoundException e) {
+            return "redirect:/login";
+        } catch (Exception e) {
+            e.printStackTrace();
+            model.addAttribute("error", "Hiba történt: " + e.getMessage());
+            return "error";
         }
-        return "dashboard";
-    }
-
-    // Régi funkcionalitás - kompatibilitás
-    @GetMapping("/old-dashboard")
-    public String oldDashboard(Model model) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null) {
-            model.addAttribute("username", auth.getName());
-        }
-        return "dashboard";
     }
 }

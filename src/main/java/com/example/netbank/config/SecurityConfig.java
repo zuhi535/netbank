@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -15,7 +16,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/register", "/register/**", "/login", "/css/**", "/js/**").permitAll()
-                        .requestMatchers("/dashboard").authenticated() // Explicit engedélyezés
+                        .requestMatchers("/dashboard", "/account/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -24,11 +25,14 @@ public class SecurityConfig {
                         .permitAll()
                 )
                 .logout(logout -> logout
-                        .logoutSuccessUrl("/")
+                        .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                        .logoutSuccessUrl("/?logoutSuccess=true")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID")
                         .permitAll()
                 )
                 .exceptionHandling(exception -> exception
-                        .accessDeniedPage("/access-denied") // Opcionális: hozzáférés megtagadva oldal
+                        .accessDeniedPage("/access-denied")
                 );
 
         return http.build();

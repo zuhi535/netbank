@@ -49,6 +49,20 @@
         .back-link:hover {
             background-color: #286090;
         }
+        .error-message {
+            color: #d9534f;
+            background-color: #f2dede;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success-message {
+            color: #3c763d;
+            background-color: #dff0d8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -57,6 +71,9 @@
     <p><strong>SZÁMLASZÁM:</strong> <span th:text="${account.accountNumber}"></span></p>
     <p><strong>JELENLEGI EGYENLEG:</strong> <span th:text="${#numbers.formatDecimal(account.balance, 1, 2)}"></span> Ft</p>
 </div>
+
+<div th:if="${error}" class="error-message" th:text="${error}"></div>
+<div th:if="${success}" class="success-message" th:text="${success}"></div>
 
 <div class="transaction-form">
     <h2>Pénz feltöltése</h2>

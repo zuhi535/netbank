@@ -3,9 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <title>NetBank - Főoldal</title>
+  <style>
+    .logout-message {
+        color: green;
+        background-color: #e8f5e9;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+    }
+  </style>
 </head>
 <body>
 <h1>Üdvözöljük a NetBank-ban!</h1>
+
+<div th:if="${param.logoutSuccess}" class="logout-message">
+  Sikeresen kijelentkezett!
+</div>
+
 <p>
   <a th:href="@{/login}">Bejelentkezés</a> |
   <a th:href="@{/register}">Regisztráció</a>

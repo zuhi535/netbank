@@ -38,11 +38,34 @@ public class Account {
         }
     }
 
+    // Átutalás
+    public boolean transfer(Account targetAccount, BigDecimal amount) {
+        if (amount.compareTo(BigDecimal.ZERO) > 0 &&
+                this.balance.compareTo(amount) >= 0) {
+            this.withdraw(amount);
+            targetAccount.deposit(amount);
+            return true;
+        }
+        return false;
+    }
+
     public void setUser(User user) {
         this.user = user;
     }
 
     public User getUser() {
         return user;
+    }
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void setBalance(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public Object getId() {
+        return id;
     }
 }

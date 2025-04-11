@@ -6,6 +6,7 @@ import com.example.netbank.repository.AccountRepository;
 import com.example.netbank.repository.UserRepository;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -35,7 +36,6 @@ public class UserService implements UserDetailsService {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         User savedUser = userRepository.save(user);
 
-        // Régi funkcionalitás: automatikus számlalétrehozás
         Account account = new Account();
         account.setUser(savedUser);
         accountRepository.save(account);
@@ -46,11 +46,22 @@ public class UserService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        // Új funkcionalitás: CustomUserDetails bővítve userId-val
-        return new CustomUserDetails(user);
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getEmail())
+                .password(user.getPassword())
+                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")))
+                .build();
     }
 
-    // Pénzkezelés - régi funkcionalitás
+    @Transactional(readOnly = true)
+    public User findByEmail(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        // Explicit módon inicializáljuk a lazy collection-t
+        Hibernate.initialize(user.getAccounts());
+        return user;
+    }
+
     @Transactional
     public void deposit(Long accountId, BigDecimal amount) {
         Account account = accountRepository.findById(accountId)
@@ -67,45 +78,28 @@ public class UserService implements UserDetailsService {
         accountRepository.save(account);
     }
 
-    // Új metódusok a dashboard működéséhez
-    public static class CustomUserDetails extends org.springframework.security.core.userdetails.User {
-        private final String fullName;
-        private final Long userId;
-
-        public CustomUserDetails(User user) {
-            super(user.getEmail(),
-                    user.getPassword(),
-                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
-            this.fullName = user.getName();
-            this.userId = user.getId();
-        }
-
-        public String getFullName() {
-            return fullName;
-        }
-
-        public Long getUserId() {
-            return userId;
-        }
+    @Transactional(readOnly = true)
+    public Optional<Account> getAccountById(Long accountId) {
+        return accountRepository.findById(accountId);
     }
 
-    @Transactional(readOnly = true)
-    public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .map(user -> {
-                    Hibernate.initialize(user.getAccounts());
-                    return user;
-                });
-    }
+    @Transactional
+    public void transfer(Long sourceAccountId, String targetAccountNumber, BigDecimal amount) {
+        Account sourceAccount = accountRepository.findById(sourceAccountId)
+                .orElseThrow(() -> new RuntimeException("Forrás számla nem található"));
 
-    // Régi metódus kompatibilitás miatt
-    @Transactional(readOnly = true)
-    public User getUserById(Long id) {
-        return userRepository.findById(id)
-                .map(user -> {
-                    Hibernate.initialize(user.getAccounts());
-                    return user;
-                })
-                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        Account targetAccount = accountRepository.findByAccountNumber(targetAccountNumber)
+                .orElseThrow(() -> new RuntimeException("Cél számla nem található: " + targetAccountNumber));
+
+        if (sourceAccount.getId().equals(targetAccount.getId())) {
+            throw new RuntimeException("Nem utalhat önmagának");
+        }
+
+        if (!sourceAccount.transfer(targetAccount, amount)) {
+            throw new RuntimeException("Sikertelen utalás: nincs elegendő fedezet vagy érvénytelen összeg");
+        }
+
+        accountRepository.save(sourceAccount);
+        accountRepository.save(targetAccount);
     }
 }
