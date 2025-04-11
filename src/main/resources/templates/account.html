@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Számla kezelése</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .account-info {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .transaction-form {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        input[type="number"] {
+            padding: 8px;
+            margin-right: 10px;
+            width: 200px;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 8px 15px;
+            background-color: #337ab7;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .back-link:hover {
+            background-color: #286090;
+        }
+        .error-message {
+            color: #d9534f;
+            background-color: #f2dede;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success-message {
+            color: #3c763d;
+            background-color: #dff0d8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+<div class="account-info">
+    <h1>SZÁMLA KEZELÉSE</h1>
+    <p><strong>SZÁMLASZÁM:</strong> <span th:text="${account.accountNumber}"></span></p>
+    <p><strong>JELENLEGI EGYENLEG:</strong> <span th:text="${#numbers.formatDecimal(account.balance, 1, 2)}"></span> Ft</p>
+</div>
+
+<div th:if="${error}" class="error-message" th:text="${error}"></div>
+<div th:if="${success}" class="success-message" th:text="${success}"></div>
+
+<div class="transaction-form">
+    <h2>Pénz feltöltése</h2>
+    <form th:action="@{/account/{accountId}/deposit(accountId=${account.id})}" method="post">
+        <input type="number" name="amount" step="0.01" min="0.01" required placeholder="Összeg">
+        <button type="submit">Feltöltés</button>
+    </form>
+</div>
+
+<div class="transaction-form">
+    <h2>Pénz levétele</h2>
+    <form th:action="@{/account/{accountId}/withdraw(accountId=${account.id})}" method="post">
+        <input type="number" name="amount" step="0.01" min="0.01" th:max="${account.balance}" required placeholder="Összeg">
+        <button type="submit">Levétel</button>
+    </form>
+</div>
+
+<a href="/dashboard" class="back-link">Vissza a főoldalra</a>
+</body>
+</html>

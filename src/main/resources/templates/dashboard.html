@@ -3,9 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .account-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .balance {
+            font-weight: bold;
+            color: #2a6496;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .logout-btn {
+            background-color: #f44336;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .error-message {
+            color: #d9534f;
+            background-color: #f2dede;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
 </head>
 <body>
-<h1>Dashboard</h1>
-<p>Üdvözöljük, <span th:text="${username}">Felhasználó</span>!</p>
+<h1>Üdvözöljük, <span th:text="${username} ?: 'Vendég'"></span>!</h1>
+
+<div th:if="${error}" class="error-message" th:text="${error}"></div>
+
+<div th:if="${user?.accounts != null and not user.accounts.isEmpty()}">
+    <h2>Ön számlái:</h2>
+    <div th:each="account : ${user.accounts}" class="account-card">
+        <h3>SZÁMLASZÁM: <span th:text="${account.accountNumber}"></span></h3>
+        <p>EGYENLEG: <span class="balance" th:text="${#numbers.formatDecimal(account.balance, 1, 2)} + ' Ft'"></span></p>
+        <a th:href="@{/account/{accountId}(accountId=${account.id})}" class="btn">Számla kezelése</a>
+    </div>
+</div>
+<div th:unless="${user?.accounts != null and not user.accounts.isEmpty()}">
+    <p>Még nincsenek számlái.</p>
+    <a th:href="@{/create-account}" class="btn">Új számla létrehozása</a>
+</div>
+
+<!-- POST kéréses kijelentkezés (ajánlott) -->
+<form th:action="@{/logout}" method="post">
+    <button type="submit" class="btn logout-btn">Kijelentkezés</button>
+</form>
 </body>
 </html>

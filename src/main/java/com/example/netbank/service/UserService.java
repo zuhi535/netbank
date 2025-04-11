@@ -1,15 +1,21 @@
 package com.example.netbank.service;
 
+import com.example.netbank.model.Account;
 import com.example.netbank.model.User;
+import com.example.netbank.repository.AccountRepository;
 import com.example.netbank.repository.UserRepository;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -20,11 +26,19 @@ public class UserService implements UserDetailsService {
     private UserRepository userRepository;
 
     @Autowired
+    private AccountRepository accountRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Transactional
     public void register(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        Account account = new Account();
+        account.setUser(savedUser);
+        accountRepository.save(account);
     }
 
     @Override
@@ -32,25 +46,40 @@ public class UserService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        return new CustomUserDetails(user);
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getEmail())
+                .password(user.getPassword())
+                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")))
+                .build();
     }
 
-    public static class CustomUserDetails extends org.springframework.security.core.userdetails.User {
-        private final String fullName;
-
-        public CustomUserDetails(User user) {
-            super(user.getEmail(),
-                    user.getPassword(),
-                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER")));
-            this.fullName = user.getName();
-        }
-
-        public String getFullName() {
-            return fullName;
-        }
-    }
-
+    @Transactional(readOnly = true)
     public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
+        return userRepository.findByEmail(email)
+                .map(user -> {
+                    Hibernate.initialize(user.getAccounts());
+                    return user;
+                });
+    }
+
+    @Transactional
+    public void deposit(Long accountId, BigDecimal amount) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+        account.deposit(amount);
+        accountRepository.save(account);
+    }
+
+    @Transactional
+    public void withdraw(Long accountId, BigDecimal amount) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+        account.withdraw(amount);
+        accountRepository.save(account);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Account> getAccountById(Long accountId) {
+        return accountRepository.findById(accountId);
     }
 }
