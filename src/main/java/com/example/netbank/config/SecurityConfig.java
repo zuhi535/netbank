@@ -15,6 +15,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/register", "/register/**", "/login", "/css/**", "/js/**").permitAll()
+                        .requestMatchers("/dashboard").authenticated() // Explicit engedélyezés
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -25,6 +26,9 @@ public class SecurityConfig {
                 .logout(logout -> logout
                         .logoutSuccessUrl("/")
                         .permitAll()
+                )
+                .exceptionHandling(exception -> exception
+                        .accessDeniedPage("/access-denied") // Opcionális: hozzáférés megtagadva oldal
                 );
 
         return http.build();

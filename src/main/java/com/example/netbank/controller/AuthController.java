@@ -4,6 +4,8 @@ import com.example.netbank.model.User;
 import com.example.netbank.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -22,7 +24,6 @@ public class AuthController {
 
     @GetMapping("/register")
     public String showRegisterForm(Model model) {
-        System.out.println("Register page requested"); // vagy logger.használata
         model.addAttribute("user", new User());
         return "register";
     }
@@ -42,7 +43,13 @@ public class AuthController {
     }
 
     @GetMapping("/dashboard")
-    public String dashboard() {
+    public String dashboard(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()) {
+            // Itt használjuk a CustomUserDetails-t a név lekéréséhez
+            UserService.CustomUserDetails userDetails = (UserService.CustomUserDetails) auth.getPrincipal();
+            model.addAttribute("username", userDetails.getFullName());
+        }
         return "dashboard";
     }
 }
