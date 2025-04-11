@@ -4,9 +4,14 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import lombok.ToString;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Data
+@ToString(exclude = "accounts")
 public class User {
 
     @Id
@@ -24,12 +29,20 @@ public class User {
     @NotBlank(message = "Jelszó kötelező")
     private String password;
 
-    public void setPassword(String password) {
-        this.password = password;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Account> accounts = new ArrayList<>();
+
+    // Explicit getter/setter-ek a Lombok mellett (opcionális)
+    public Long getId() {
+        return id;
     }
 
-    public String getPassword() {
-        return password;
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getEmail() {
@@ -40,11 +53,15 @@ public class User {
         this.email = email;
     }
 
-    public String getName() {
-        return name;
+    public String getPassword() {
+        return password;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public Object getAccounts() {
+        return accounts;
     }
 }
