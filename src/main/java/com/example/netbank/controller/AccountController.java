@@ -39,10 +39,11 @@ public class AccountController {
         try {
             userService.deposit(accountId, amount);
             redirectAttributes.addFlashAttribute("success", "Sikeres pénzfeltöltés: " + amount + " Ft");
+            return "redirect:/dashboard";  // Visszairányítás a dashboardra
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/account/" + accountId;
         }
-        return "redirect:/account/" + accountId;
     }
 
     @PostMapping("/{accountId}/withdraw")
@@ -52,10 +53,11 @@ public class AccountController {
         try {
             userService.withdraw(accountId, amount);
             redirectAttributes.addFlashAttribute("success", "Sikeres pénzlevétel: " + amount + " Ft");
+            return "redirect:/dashboard";  // Visszairányítás a dashboardra
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/account/" + accountId;
         }
-        return "redirect:/account/" + accountId;
     }
 
     @GetMapping("/{accountId}/transfer")
@@ -73,9 +75,10 @@ public class AccountController {
             userService.transfer(accountId, targetAccountNumber, amount);
             redirectAttributes.addFlashAttribute("success",
                     "Sikeres utalás: " + amount + " Ft a " + targetAccountNumber + " számlára");
+            return "redirect:/dashboard";  // Visszairányítás a dashboardra
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/account/" + accountId;
         }
-        return "redirect:/account/" + accountId;
     }
 }

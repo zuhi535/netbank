@@ -46,12 +46,48 @@
             border-radius: 4px;
             margin: 10px 0;
         }
+        .success-message {
+            color: #3c763d;
+            background-color: #dff0d8;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .transaction-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .transaction-table th, .transaction-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .transaction-table th {
+            background-color: #f2f2f2;
+        }
+        .transaction-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .deposit {
+            color: green;
+        }
+        .withdrawal {
+            color: red;
+        }
+        .transfer-out {
+            color: #d9534f;
+        }
+        .transfer-in {
+            color: #5cb85c;
+        }
     </style>
 </head>
 <body>
 <h1>Üdvözöljük, <span th:text="${username} ?: 'Vendég'"></span>!</h1>
 
 <div th:if="${error}" class="error-message" th:text="${error}"></div>
+<div th:if="${success}" class="success-message" th:text="${success}"></div>
 
 <div th:if="${user?.accounts != null and not user.accounts.isEmpty()}">
     <h2>Ön számlái:</h2>
@@ -67,7 +103,35 @@
     <a th:href="@{/create-account}" class="btn">Új számla létrehozása</a>
 </div>
 
-<!-- POST kéréses kijelentkezés (ajánlott) -->
+<h2>Tranzakciók</h2>
+<table class="transaction-table" th:if="${not #lists.isEmpty(transactions)}">
+    <thead>
+    <tr>
+        <th>Dátum</th>
+        <th>Összeg</th>
+        <th>Leírás</th>
+        <th>Típus</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="transaction : ${transactions}">
+        <td th:text="${#temporals.format(transaction.timestamp, 'yyyy-MM-dd HH:mm')}"></td>
+        <td th:class="${transaction.transactionType == 'DEPOSIT' or transaction.transactionType == 'TRANSFER_IN' ? 'deposit' : (transaction.transactionType == 'WITHDRAWAL' or transaction.transactionType == 'TRANSFER_OUT' ? 'withdrawal' : '')}"
+            th:text="${(transaction.transactionType == 'DEPOSIT' or transaction.transactionType == 'TRANSFER_IN' ? '+' : '-') + #numbers.formatDecimal(transaction.amount.abs(), 1, 2)} + ' Ft'"></td>
+        <td th:text="${transaction.description}"></td>
+        <td th:class="${transaction.transactionType.toLowerCase()}">
+                <span th:switch="${transaction.transactionType}">
+                    <span th:case="'DEPOSIT'">Befizetés</span>
+                    <span th:case="'WITHDRAWAL'">Kifizetés</span>
+                    <span th:case="'TRANSFER_OUT'">Átutalás (kimenő)</span>
+                    <span th:case="'TRANSFER_IN'">Átutalás (bejövő)</span>
+                </span>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p th:if="${#lists.isEmpty(transactions)}">Nincsenek tranzakciók</p>
+
 <form th:action="@{/logout}" method="post">
     <button type="submit" class="btn logout-btn">Kijelentkezés</button>
 </form>

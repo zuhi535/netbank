@@ -1,8 +1,10 @@
 package com.example.netbank.service;
 
 import com.example.netbank.model.Account;
+import com.example.netbank.model.Transaction;
 import com.example.netbank.model.User;
 import com.example.netbank.repository.AccountRepository;
+import com.example.netbank.repository.TransactionRepository;
 import com.example.netbank.repository.UserRepository;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -27,6 +31,9 @@ public class UserService implements UserDetailsService {
 
     @Autowired
     private AccountRepository accountRepository;
+
+    @Autowired
+    private TransactionRepository transactionRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -57,7 +64,6 @@ public class UserService implements UserDetailsService {
     public User findByEmail(String email) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-        // Explicit módon inicializáljuk a lazy collection-t
         Hibernate.initialize(user.getAccounts());
         return user;
     }
@@ -68,6 +74,13 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new RuntimeException("Account not found"));
         account.deposit(amount);
         accountRepository.save(account);
+
+        Transaction transaction = new Transaction();
+        transaction.setAccount(account);
+        transaction.setAmount(amount);
+        transaction.setDescription("Pénzbetét");
+        transaction.setTransactionType("DEPOSIT");
+        transactionRepository.save(transaction);
     }
 
     @Transactional
@@ -76,6 +89,13 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new RuntimeException("Account not found"));
         account.withdraw(amount);
         accountRepository.save(account);
+
+        Transaction transaction = new Transaction();
+        transaction.setAccount(account);
+        transaction.setAmount(amount.negate());
+        transaction.setDescription("Pénzlevétel");
+        transaction.setTransactionType("WITHDRAWAL");
+        transactionRepository.save(transaction);
     }
 
     @Transactional(readOnly = true)
@@ -101,5 +121,31 @@ public class UserService implements UserDetailsService {
 
         accountRepository.save(sourceAccount);
         accountRepository.save(targetAccount);
+
+        // Kimenő tranzakció
+        Transaction outgoing = new Transaction();
+        outgoing.setAccount(sourceAccount);
+        outgoing.setAmount(amount.negate());
+        outgoing.setDescription("Átutalás a " + targetAccountNumber + " számlára");
+        outgoing.setTransactionType("TRANSFER_OUT");
+        transactionRepository.save(outgoing);
+
+        // Bejövő tranzakció
+        Transaction incoming = new Transaction();
+        incoming.setAccount(targetAccount);
+        incoming.setAmount(amount);
+        incoming.setDescription("Átutalás a " + sourceAccount.getAccountNumber() + " számláról");
+        incoming.setTransactionType("TRANSFER_IN");
+        transactionRepository.save(incoming);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Transaction> getTransactionsForUser(String email) {
+        User user = findByEmail(email);
+        List<Transaction> transactions = new ArrayList<>();
+        for (Account account : user.getAccounts()) {
+            transactions.addAll(transactionRepository.findByAccountIdOrderByTimestampDesc(account.getId()));
+        }
+        return transactions;
     }
 }

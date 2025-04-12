@@ -65,7 +65,15 @@ public class Account {
         this.balance = balance;
     }
 
-    public Object getId() {
+    public Long getId() {
         return id;
+    }
+
+    public String getAccountNumber() {
+        return accountNumber;
+    }
+
+    public void setAccountNumber(String accountNumber) {
+        this.accountNumber = accountNumber;
     }
 }
