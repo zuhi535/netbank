@@ -15,6 +15,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class AuthController {
@@ -66,13 +67,14 @@ public class AuthController {
                 return "redirect:/login";
             }
 
-            // Mindig friss adatokat kérünk le
             User user = userService.findByEmail(auth.getName());
             List<Transaction> transactions = userService.getTransactionsForUser(auth.getName());
+            Map<String, Object> financialAnalysis = userService.getFinancialAnalysis(auth.getName());
 
             model.addAttribute("username", user.getName());
             model.addAttribute("user", user);
             model.addAttribute("transactions", transactions);
+            model.addAttribute("analysis", financialAnalysis);
             return "dashboard";
         } catch (UsernameNotFoundException e) {
             return "redirect:/login";

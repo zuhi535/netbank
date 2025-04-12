@@ -18,10 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService implements UserDetailsService {
@@ -147,5 +146,62 @@ public class UserService implements UserDetailsService {
             transactions.addAll(transactionRepository.findByAccountIdOrderByTimestampDesc(account.getId()));
         }
         return transactions;
+    }
+
+    @Transactional(readOnly = true)
+    public Map<String, Object> getFinancialAnalysis(String email) {
+        User user = findByEmail(email);
+        List<Transaction> transactions = getTransactionsForUser(email);
+
+        LocalDateTime thirtyMinutesAgo = LocalDateTime.now().minusMinutes(30);
+
+        // Szűrjük az elmúlt 30 perc tranzakcióit
+        List<Transaction> recentTransactions = transactions.stream()
+                .filter(t -> t.getTimestamp().isAfter(thirtyMinutesAgo))
+                .collect(Collectors.toList());
+
+        // Kategóriák szerinti csoportosítás
+        Map<String, Object> analysis = new HashMap<>();
+
+        // Bevétel (pozitív tranzakciók)
+        List<Transaction> incomes = recentTransactions.stream()
+                .filter(t -> t.getAmount().compareTo(BigDecimal.ZERO) > 0)
+                .collect(Collectors.toList());
+        analysis.put("incomes", incomes);
+
+        // Kiadások (negatív tranzakciók)
+        List<Transaction> expenses = recentTransactions.stream()
+                .filter(t -> t.getAmount().compareTo(BigDecimal.ZERO) < 0)
+                .collect(Collectors.toList());
+        analysis.put("expenses", expenses);
+
+        // Nagy kiadások (100.000 Ft feletti)
+        List<Transaction> bigExpenses = expenses.stream()
+                .filter(t -> t.getAmount().abs().compareTo(new BigDecimal("100000")) >= 0)
+                .collect(Collectors.toList());
+        analysis.put("bigExpenses", bigExpenses);
+
+        // Kis kiadások (2.000 Ft alatti)
+        List<Transaction> smallExpenses = expenses.stream()
+                .filter(t -> t.getAmount().abs().compareTo(new BigDecimal("2000")) < 0)
+                .collect(Collectors.toList());
+        analysis.put("smallExpenses", smallExpenses);
+
+        // Készpénzfelvételek
+        List<Transaction> cashWithdrawals = expenses.stream()
+                .filter(t -> t.getTransactionType().equals("WITHDRAWAL"))
+                .collect(Collectors.toList());
+        analysis.put("cashWithdrawals", cashWithdrawals);
+
+        // Összesítések
+        analysis.put("totalIncome", incomes.stream()
+                .map(Transaction::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+        analysis.put("totalExpense", expenses.stream()
+                .map(t -> t.getAmount().abs())
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+
+        return analysis;
     }
 }

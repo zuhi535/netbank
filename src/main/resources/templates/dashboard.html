@@ -81,6 +81,56 @@
         .transfer-in {
             color: #5cb85c;
         }
+        /* Új stílusok az elemzési részhez */
+        .analysis-section {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .analysis-card {
+            flex: 1;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f5f5f5;
+            text-align: center;
+        }
+        .analysis-card h3 {
+            margin-top: 0;
+        }
+        .amount {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .income {
+            color: #3c763d;
+        }
+        .expense {
+            color: #a94442;
+        }
+        .analysis-details {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .analysis-column {
+            flex: 1;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .analysis-column h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .analysis-column ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .analysis-column li {
+            padding: 5px 0;
+            border-bottom: 1px dashed #eee;
+        }
     </style>
 </head>
 <body>
@@ -103,7 +153,87 @@
     <a th:href="@{/create-account}" class="btn">Új számla létrehozása</a>
 </div>
 
-<h2>Tranzakciók</h2>
+<h2>Pénzügyi elemzés (elmúlt 30 perc)</h2>
+
+<div class="analysis-section">
+    <div class="analysis-card">
+        <h3>Összes bevétel</h3>
+        <p class="amount income" th:text="${#numbers.formatDecimal(analysis.totalIncome, 1, 2)} + ' Ft'"></p>
+    </div>
+
+    <div class="analysis-card">
+        <h3>Összes kiadás</h3>
+        <p class="amount expense" th:text="${#numbers.formatDecimal(analysis.totalExpense, 1, 2)} + ' Ft'"></p>
+    </div>
+</div>
+
+<div class="analysis-details">
+    <div class="analysis-column">
+        <h3>Bevételek</h3>
+        <ul th:if="${not #lists.isEmpty(analysis.incomes)}">
+            <li th:each="income : ${analysis.incomes}">
+                <span th:text="${#temporals.format(income.timestamp, 'HH:mm')}"></span> -
+                <span th:text="${#numbers.formatDecimal(income.amount, 1, 2)} + ' Ft'"></span> -
+                <span th:text="${income.description}"></span>
+            </li>
+        </ul>
+        <p th:if="${#lists.isEmpty(analysis.incomes)}">Nincsenek bevételek</p>
+    </div>
+
+    <div class="analysis-column">
+        <h3>Kiadások</h3>
+        <ul th:if="${not #lists.isEmpty(analysis.expenses)}">
+            <li th:each="expense : ${analysis.expenses}">
+                <span th:text="${#temporals.format(expense.timestamp, 'HH:mm')}"></span> -
+                <span th:text="${#numbers.formatDecimal(expense.amount.abs(), 1, 2)} + ' Ft'"></span> -
+                <span th:text="${expense.description}"></span>
+            </li>
+        </ul>
+        <p th:if="${#lists.isEmpty(analysis.expenses)}">Nincsenek kiadások</p>
+    </div>
+</div>
+
+<div class="analysis-details">
+    <div class="analysis-column">
+        <h3>Nagyobb kiadások (100.000 Ft felett)</h3>
+        <ul th:if="${not #lists.isEmpty(analysis.bigExpenses)}">
+            <li th:each="expense : ${analysis.bigExpenses}">
+                <span th:text="${#temporals.format(expense.timestamp, 'HH:mm')}"></span> -
+                <span th:text="${#numbers.formatDecimal(expense.amount.abs(), 1, 2)} + ' Ft'"></span> -
+                <span th:text="${expense.description}"></span>
+            </li>
+        </ul>
+        <p th:if="${#lists.isEmpty(analysis.bigExpenses)}">Nincsenek nagyobb kiadások</p>
+    </div>
+
+    <div class="analysis-column">
+        <h3>Kis összegű kiadások (2.000 Ft alatt)</h3>
+        <ul th:if="${not #lists.isEmpty(analysis.smallExpenses)}">
+            <li th:each="expense : ${analysis.smallExpenses}">
+                <span th:text="${#temporals.format(expense.timestamp, 'HH:mm')}"></span> -
+                <span th:text="${#numbers.formatDecimal(expense.amount.abs(), 1, 2)} + ' Ft'"></span> -
+                <span th:text="${expense.description}"></span>
+            </li>
+        </ul>
+        <p th:if="${#lists.isEmpty(analysis.smallExpenses)}">Nincsenek kis összegű kiadások</p>
+    </div>
+</div>
+
+<div class="analysis-details">
+    <div class="analysis-column">
+        <h3>Készpénzfelvételek</h3>
+        <ul th:if="${not #lists.isEmpty(analysis.cashWithdrawals)}">
+            <li th:each="withdrawal : ${analysis.cashWithdrawals}">
+                <span th:text="${#temporals.format(withdrawal.timestamp, 'HH:mm')}"></span> -
+                <span th:text="${#numbers.formatDecimal(withdrawal.amount.abs(), 1, 2)} + ' Ft'"></span> -
+                <span th:text="${withdrawal.description}"></span>
+            </li>
+        </ul>
+        <p th:if="${#lists.isEmpty(analysis.cashWithdrawals)}">Nincsenek készpénzfelvételek</p>
+    </div>
+</div>
+
+<h2>Összes tranzakció</h2>
 <table class="transaction-table" th:if="${not #lists.isEmpty(transactions)}">
     <thead>
     <tr>
